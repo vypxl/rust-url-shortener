@@ -1,5 +1,5 @@
 # Url shortener
 
-An experimental project written in Rust using Actix Web.
+An experimental project written in Rust using [Actix Web](https://actix.rs).
 
-Using the amazing [PicoCss](https://picocss.com) for styles.
+Using the amazing [PicoCSS](https://picocss.com) for styles.

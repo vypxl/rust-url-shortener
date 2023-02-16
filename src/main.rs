@@ -35,19 +35,21 @@ async fn redirect<'a>(
     Ok(web::Redirect::to(href.to_string()).temporary())
 }
 
-fn make_short_name(state: Arc<AppState>) -> Option<String> {
-    for _ in 0..1024 {
-        let name = thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(5)
-            .map(char::from)
-            .collect();
+fn make_short_name(state: Arc<AppState>) -> String {
+    for len in 5.. {
+        for _ in 0..65536 {
+            let name = thread_rng()
+                .sample_iter(&Alphanumeric)
+                .take(len)
+                .map(char::from)
+                .collect();
 
-        if let None = state.url_map.get(&name) {
-            return Some(name);
+            if let None = state.url_map.get(&name) {
+                return name;
+            }
         }
     }
-    None
+    unreachable!()
 }
 
 #[post("/")]
@@ -60,9 +62,7 @@ async fn post_index<'a>(
     if let Some(name) = state.url_map_reverse.get(&data.target) {
         template_data.insert("target", name.to_string());
     } else {
-        let name = make_short_name(state.clone().into_inner()).ok_or(
-            actix_web::error::ErrorInternalServerError("Failed to generate short name"),
-        )?;
+        let name = make_short_name(state.clone().into_inner());
 
         state.url_map.insert(name.clone(), data.target.clone());
         state

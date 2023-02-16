@@ -13,9 +13,9 @@ struct FormData {
 }
 
 struct AppState<'a> {
-    hb: Handlebars<'a>,
-    h: Arc<CHashMap<String, String>>,
-    rh: Arc<CHashMap<String, String>>,
+    templates: Handlebars<'a>,
+    url_map: Arc<CHashMap<String, String>>,
+    url_map_reverse: Arc<CHashMap<String, String>>,
 }
 
 #[get("/")]
@@ -29,10 +29,18 @@ async fn redirect<'a>(
     target: web::Path<String>,
 ) -> Result<web::Redirect> {
     let href = state
-        .h
+        .url_map
         .get(&target.into_inner())
         .ok_or(actix_web::error::ErrorNotFound(""))?;
     Ok(web::Redirect::to(href.to_string()).temporary())
+}
+
+fn make_short_name() -> String {
+    thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(5)
+        .map(char::from)
+        .collect()
 }
 
 #[post("/")]
@@ -40,20 +48,21 @@ async fn post_index<'a>(
     state: web::Data<AppState<'a>>,
     data: web::Form<FormData>,
 ) -> Result<HttpResponse, Box<dyn Error>> {
-    let mut yeet = HashMap::new();
-    if let Some(name) = state.rh.get(&data.target) {
-        yeet.insert("target", name.to_string());
+    let mut template_data = HashMap::new();
+
+    if let Some(name) = state.url_map_reverse.get(&data.target) {
+        template_data.insert("target", name.to_string());
     } else {
-        let name = thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(5)
-            .map(char::from)
-            .collect::<String>();
-        state.h.insert(name.clone(), data.target.clone());
-        state.rh.insert(data.target.clone(), name.clone());
-        yeet.insert("target", name);
+        let name = make_short_name();
+
+        state.url_map.insert(name.clone(), data.target.clone());
+        state
+            .url_map_reverse
+            .insert(data.target.clone(), name.clone());
+        template_data.insert("target", name);
     }
-    let s = state.hb.render("posted", &yeet)?;
+
+    let s = state.templates.render("posted", &template_data)?;
     Ok(HttpResponse::Ok().body(s))
 }
 
@@ -62,14 +71,15 @@ async fn main() -> std::io::Result<()> {
     let h = Arc::new(CHashMap::new());
     let rh = Arc::new(CHashMap::new());
     HttpServer::new(move || {
-        let mut hb = Handlebars::new();
-        hb.register_templates_directory(".hbs", "templates")
+        let mut templates = Handlebars::new();
+        templates
+            .register_templates_directory(".hbs", "templates")
             .unwrap();
 
         let data = AppState {
-            hb,
-            h: h.clone(),
-            rh: rh.clone(),
+            templates,
+            url_map: h.clone(),
+            url_map_reverse: rh.clone(),
         };
 
         App::new()

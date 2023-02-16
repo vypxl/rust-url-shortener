@@ -1,4 +1,5 @@
 use actix_files::{Files, NamedFile};
+use actix_web::middleware::Logger;
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Result};
 use chashmap::CHashMap;
 use handlebars::Handlebars;
@@ -70,6 +71,9 @@ async fn post_index<'a>(
 async fn main() -> std::io::Result<()> {
     let url_map = Arc::new(CHashMap::new());
     let url_map_reverse = Arc::new(CHashMap::new());
+
+    env_logger::init();
+
     HttpServer::new(move || {
         let mut templates = Handlebars::new();
         templates

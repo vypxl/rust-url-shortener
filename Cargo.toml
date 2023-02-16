@@ -12,3 +12,4 @@ serde = { version = "1", features = ["derive"] }
 handlebars = { version = "4", features = ["dir_source"] }
 chashmap = "2.2.2"
 rand = "0.8.5"
+env_logger = "0.10.0"

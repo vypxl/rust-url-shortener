@@ -68,8 +68,8 @@ async fn post_index<'a>(
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let h = Arc::new(CHashMap::new());
-    let rh = Arc::new(CHashMap::new());
+    let url_map = Arc::new(CHashMap::new());
+    let url_map_reverse = Arc::new(CHashMap::new());
     HttpServer::new(move || {
         let mut templates = Handlebars::new();
         templates
@@ -78,8 +78,8 @@ async fn main() -> std::io::Result<()> {
 
         let data = AppState {
             templates,
-            url_map: h.clone(),
-            url_map_reverse: rh.clone(),
+            url_map: url_map.clone(),
+            url_map_reverse: url_map_reverse.clone(),
         };
 
         App::new()
